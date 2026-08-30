@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+.env.production
+*.log
+
+# data/posts.json은 빌드 시 자동 생성 (Vercel에서는 빌드 시 생성됨)
+# 로컬 빌드 결과물이므로 Git에 포함하지 않음
+# data/
