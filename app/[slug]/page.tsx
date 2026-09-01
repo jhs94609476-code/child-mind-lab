@@ -13,11 +13,43 @@ export function generateStaticParams() {
   return posts.map((p) => ({ slug: p.slug }));
 }
 
-export function generateMetadata({ params }: Props): Metadata {
-  // Static export에서는 params가 동기적으로 처리됨
-  // params는 빌드 시점에 generateStaticParams로부터 이미 확정된 값
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const post = getPostBySlug(slug);
+
+  if (!post) {
+    return { title: "페이지를 찾을 수 없습니다" };
+  }
+
+  const baseUrl = "https://child-mind-lab.vercel.app";
+  const url = `${baseUrl}/${slug}/`;
+
   return {
-    title: "아이마음연구소",
+    title: post.title,
+    description: post.summary,
+    keywords: post.keywords,
+    openGraph: {
+      type: "article",
+      locale: "ko_KR",
+      url,
+      siteName: "아이마음연구소",
+      title: post.title,
+      description: post.summary,
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: post.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.summary,
+      images: ["/og-image.png"],
+    },
   };
 }
 

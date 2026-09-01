@@ -12,9 +12,38 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.ico",
   },
+  // 검색엔진 소유 확인
+  verification: {
+    google: "hNvXWg0ehlmQ3dY5uT1fMkwxAk104_EY265xnfmCVfg",
+  },
+  other: {
+    "naver-site-verification": "e9357a6c58b5adf1c3ca3a154f45d50e7c635814",
+  },
+  // SNS 링크 미리보기 (Open Graph)
   openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    url: "https://child-mind-lab.vercel.app",
     siteName: "아이마음연구소",
-    images: [{ url: "/og-image.png" }],
+    title: "아이마음연구소 - 자녀심리 육아 전문 블로그",
+    description:
+      "초등·사춘기 자녀 심리, 육아 고민 해결을 위한 전문 정보를 제공합니다.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "아이마음연구소 - 자녀심리 육아 전문 블로그",
+      },
+    ],
+  },
+  // 트위터(X) 카드
+  twitter: {
+    card: "summary_large_image",
+    title: "아이마음연구소 - 자녀심리 육아 전문 블로그",
+    description:
+      "초등·사춘기 자녀 심리, 육아 고민 해결을 위한 전문 정보를 제공합니다.",
+    images: ["/og-image.png"],
   },
 };
 
