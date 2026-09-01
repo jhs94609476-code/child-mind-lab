@@ -123,6 +123,45 @@ function processCsv(csvText) {
   return posts;
 }
 
+function generateRss(posts) {
+  const baseUrl = "https://kids-mind-lab.vercel.app";
+  const now = new Date().toUTCString();
+
+  const itemsXml = posts
+    .map((post) => {
+      const link = `${baseUrl}/${post.slug}/`;
+      return `    <item>
+      <title><![CDATA[${post.title}]]></title>
+      <link>${link}</link>
+      <guid>${link}</guid>
+      <description><![CDATA[${post.summary || post.title}]]></description>
+      <category><![CDATA[${post.category}]]></category>
+      <pubDate>${now}</pubDate>
+    </item>`;
+    })
+    .join("\n");
+
+  const rssXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>아이마음연구소 - 자녀심리 육아 전문 블로그</title>
+    <link>${baseUrl}</link>
+    <description>초등·사춘기 자녀 심리, 육아 고민 해결을 위한 전문 정보를 제공합니다.</description>
+    <language>ko</language>
+    <lastBuildDate>${now}</lastBuildDate>
+    <atom:link href="${baseUrl}/rss.xml" rel="self" type="application/rss+xml" />
+${itemsXml}
+  </channel>
+</rss>`;
+
+  const publicDir = path.join(__dirname, "..", "public");
+  if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
+  const rssPath = path.join(publicDir, "rss.xml");
+  fs.writeFileSync(rssPath, rssXml, "utf-8");
+  const kb = (fs.statSync(rssPath).size / 1024).toFixed(1);
+  console.log(`📡 public/rss.xml 생성 완료 (${kb} KB)`);
+}
+
 function savePosts(posts) {
   const dataDir = path.join(__dirname, "..", "data");
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -130,6 +169,7 @@ function savePosts(posts) {
   fs.writeFileSync(outputPath, JSON.stringify(posts, null, 2), "utf-8");
   const kb = (fs.statSync(outputPath).size / 1024).toFixed(1);
   console.log(`💾 data/posts.json 저장 완료 (${kb} KB, ${posts.length}개 포스트)`);
+  generateRss(posts);
 }
 
 async function main() {
@@ -173,6 +213,10 @@ async function main() {
     const fallbackPath = path.join(__dirname, "..", "data", "posts.json");
     if (fs.existsSync(fallbackPath)) {
       console.log("⚠️  기존 data/posts.json을 재사용합니다.");
+      try {
+        const fallbackPosts = JSON.parse(fs.readFileSync(fallbackPath, "utf-8"));
+        generateRss(fallbackPosts);
+      } catch (e) {}
     } else {
       console.error("🔴 data/posts.json도 없습니다. 빌드를 중단합니다.");
       process.exit(1);

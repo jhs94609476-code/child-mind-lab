@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "페이지를 찾을 수 없습니다" };
   }
 
-  const baseUrl = "https://child-mind-lab.vercel.app";
+  const baseUrl = "https://kids-mind-lab.vercel.app";
   const url = `${baseUrl}/${slug}/`;
 
   return {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://child-mind-lab.vercel.app"),
+  metadataBase: new URL("https://kids-mind-lab.vercel.app"),
   title: {
     default: "아이마음연구소 - 자녀심리 육아 전문 블로그",
     template: "%s | 아이마음연구소",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ko_KR",
-    url: "https://child-mind-lab.vercel.app",
+    url: "https://kids-mind-lab.vercel.app",
     siteName: "아이마음연구소",
     title: "아이마음연구소 - 자녀심리 육아 전문 블로그",
     description:
