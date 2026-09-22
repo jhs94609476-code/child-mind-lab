@@ -4,7 +4,7 @@ import { fetchPosts } from "../lib/fetchPosts";
 export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://kids-mind-lab.vercel.app";
+  const baseUrl = "https://child-mind-lab-88rx.vercel.app";
   const posts = fetchPosts();
 
   const postEntries: MetadataRoute.Sitemap = posts.map((post) => ({

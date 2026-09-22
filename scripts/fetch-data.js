@@ -124,7 +124,7 @@ function processCsv(csvText) {
 }
 
 function generateRss(posts) {
-  const baseUrl = "https://kids-mind-lab.vercel.app";
+  const baseUrl = "https://child-mind-lab-88rx.vercel.app";
   const now = new Date().toUTCString();
 
   const itemsXml = posts

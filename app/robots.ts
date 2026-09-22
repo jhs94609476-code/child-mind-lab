@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 export const dynamic = "force-static";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = "https://kids-mind-lab.vercel.app";
+  const baseUrl = "https://child-mind-lab-88rx.vercel.app";
 
   return {
     rules: {
