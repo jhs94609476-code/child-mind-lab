@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     google: "hNvXWg0ehlmQ3dY5uT1fMkwxAk104_EY265xnfmCVfg",
   },
   other: {
-    "naver-site-verification": "e9357a6c58b5adf1c3ca3a154f45d50e7c635814",
+    "naver-site-verification": "32ce9fe18e9b694a52638f67709e3fa83664f82b",
   },
   // SNS 링크 미리보기 (Open Graph)
   openGraph: {
