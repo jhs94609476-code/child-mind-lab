@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import Script from "next/script";
+import FloatingTutoring from "../components/FloatingTutoring";
+import { SiteFooter, SiteHeader } from "../components/SiteChrome";
+import { commonThumbnail } from "../lib/siteImages";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -30,9 +34,9 @@ export const metadata: Metadata = {
       "초등·사춘기 자녀 심리, 육아 고민 해결을 위한 전문 정보를 제공합니다.",
     images: [
       {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
+        url: commonThumbnail.src,
+        width: commonThumbnail.width,
+        height: commonThumbnail.height,
         alt: "아이마음연구소 - 자녀심리 육아 전문 블로그",
       },
     ],
@@ -43,7 +47,7 @@ export const metadata: Metadata = {
     title: "아이마음연구소 - 자녀심리 육아 전문 블로그",
     description:
       "초등·사춘기 자녀 심리, 육아 고민 해결을 위한 전문 정보를 제공합니다.",
-    images: ["/og-image.png"],
+    images: [commonThumbnail.src],
   },
 };
 
@@ -52,6 +56,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
+  const analyticsEnabled = measurementId && /^G-[A-Z0-9]+$/.test(measurementId);
+
   return (
     <html lang="ko">
       <head>
@@ -66,7 +73,30 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <div className="site-viewport">
+          <SiteHeader />
+          {children}
+          <SiteFooter />
+        </div>
+        <FloatingTutoring />
+        {analyticsEnabled && (
+          <>
+            <Script id="ga4-init" strategy="afterInteractive">
+              {`window.dataLayer = window.dataLayer || [];
+                window.gtag = function () { window.dataLayer.push(arguments); };
+                window.gtag('js', new Date());
+                window.gtag('config', ${JSON.stringify(measurementId)}, {
+                  page_location: window.location.origin + window.location.pathname
+                });`}
+            </Script>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
+              strategy="afterInteractive"
+            />
+          </>
+        )}
+      </body>
     </html>
   );
 }

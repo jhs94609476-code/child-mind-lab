@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
+import { commonThumbnail } from "../lib/siteImages";
 
 interface RelatedPost {
   slug: string;
@@ -46,12 +48,16 @@ export default function RelatedPosts({ posts, currentSlug }: RelatedPostsProps) 
       <h2 className="related-posts__title">같은 카테고리의 다른 글</h2>
 
       <ul className="related-list">
-        {pagePosts.map((post, idx) => (
-          <li key={post.slug} className="related-item">
+        {pagePosts.map((post, index) => (
+          <li key={`${post.slug}-${startIndex + index}`} className="related-item">
             <Link href={`/${post.slug}/`}>
-              <span className="related-item__num">
-                {String(startIndex + idx + 1).padStart(2, "0")}
-              </span>
+              <Image
+                className="related-item__thumbnail"
+                src={commonThumbnail.src}
+                width={commonThumbnail.width}
+                height={commonThumbnail.height}
+                alt=""
+              />
               <span className="related-item__text">
                 <span className="related-item__title">{post.title}</span>
                 <span className="related-item__summary">{post.summary}</span>

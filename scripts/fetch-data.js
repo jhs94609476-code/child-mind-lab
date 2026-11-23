@@ -4,16 +4,10 @@
 
 const fs = require("fs");
 const path = require("path");
+const { normalizePosts } = require("./normalize-banner-markers");
 
 const CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vStAETGqwhy2ux_FQAzPeS_bPUu_pIk_F7n79vO7LKCgAZ1KYHnqJ37WX5c2Higqtzx8gG6HBq7zouS/pub?gid=1700597570&single=true&output=csv";
-
-// 쿠팡 배너 HTML
-const AD_BANNERS = {
-  top: `<div class="ad-banner ad-top"><a href="https://link.coupang.com/a/gDAv9GUYeq" target="_blank" referrerpolicy="unsafe-url"><img src="https://ads-partners.coupang.com/banners/1013103?trackingCode=AF5508221&subId=&traceId=V0-301-969b06e95b87326d-I1013103&w=300&h=250" alt="쿠팡 광고" width="300" height="250" /></a></div>`,
-  middle: `<div class="ad-banner ad-middle"><a href="https://link.coupang.com/a/gDArgFgOYe" target="_blank" referrerpolicy="unsafe-url"><img src="https://ads-partners.coupang.com/banners/1023990?trackingCode=AF5508221&subId=&traceId=V0-301-879dd1202e5c73b2-I1023990&w=200&h=200" alt="쿠팡 광고" width="200" height="200" /></a></div>`,
-  bottom: `<div class="ad-banner ad-bottom"><a href="https://link.coupang.com/a/gDAxT8JGWy" target="_blank" referrerpolicy="unsafe-url"><img src="https://ads-partners.coupang.com/banners/1023996?trackingCode=AF5508221&subId=&traceId=V0-301-bae0f72e5e59e45f-I1023996&w=300&h=250" alt="쿠팡 광고" width="300" height="250" /></a></div>`,
-};
 
 function parseCsvRobust(csvText) {
   const text = csvText.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
@@ -94,13 +88,6 @@ function parseFrontmatter(raw) {
   };
 }
 
-function injectAds(html) {
-  return html
-    .replace(/<!--\s*DYNAMIC_AD_1\s*-->/g, AD_BANNERS.top)
-    .replace(/<!--\s*DYNAMIC_AD_2\s*-->/g, AD_BANNERS.middle)
-    .replace(/<!--\s*DYNAMIC_AD_3\s*-->/g, AD_BANNERS.bottom);
-}
-
 function cleanContent(raw) {
   let cleaned = raw.trim();
   cleaned = cleaned.replace(/^```\s*html\s*\n?/i, "");
@@ -117,10 +104,9 @@ function processCsv(csvText) {
     if (!slug || !category) continue;
     const rawContent = cleanContent(row["Content_Markdown"] || "");
     const { title, summary, keywords, body } = parseFrontmatter(rawContent);
-    const html = injectAds(body);
-    posts.push({ slug, category, title, summary, keywords, html });
+    posts.push({ slug, category, title, summary, keywords, html: body });
   }
-  return posts;
+  return normalizePosts(posts);
 }
 
 function generateRss(posts) {
@@ -174,57 +160,49 @@ function savePosts(posts) {
 
 async function main() {
   console.log("📥 Google Sheets CSV 데이터 가져오는 중...");
-  console.log(`   URL: ${CSV_URL}`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 90000);
+  let csvText;
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90000); // 90초 타임아웃
-
     const res = await fetch(CSV_URL, {
       signal: controller.signal,
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
         Accept: "text/csv,text/plain,*/*",
       },
       redirect: "follow",
     });
-
-    clearTimeout(timeout);
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-
-    const csvText = await res.text();
-    console.log(`✅ CSV 수신 완료 (${(csvText.length / 1024).toFixed(1)} KB)`);
-
-    const posts = processCsv(csvText);
-    console.log(`📊 포스트 수: ${posts.length}`);
-    savePosts(posts);
-    console.log("🚀 빌드 준비 완료!");
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    csvText = await res.text();
   } catch (err) {
-    if (err.name === "AbortError") {
-      console.error("❌ 요청 타임아웃 (90초). 네트워크 환경을 확인하세요.");
-    } else {
-      console.error("❌ CSV 가져오기 실패:", err.message);
-    }
-    // 기존 data/posts.json이 있으면 재사용
+    console.error("❌ CSV 가져오기 실패:", err.message);
     const fallbackPath = path.join(__dirname, "..", "data", "posts.json");
-    if (fs.existsSync(fallbackPath)) {
-      console.log("⚠️  기존 data/posts.json을 재사용합니다.");
-      try {
-        const fallbackPosts = JSON.parse(fs.readFileSync(fallbackPath, "utf-8"));
-        generateRss(fallbackPosts);
-      } catch (e) {}
+    if (!fs.existsSync(fallbackPath)) throw new Error("data/posts.json도 없습니다.");
+
+    const cachedPosts = JSON.parse(fs.readFileSync(fallbackPath, "utf-8"));
+    const posts = normalizePosts(cachedPosts);
+    if (posts.some((post, index) => post !== cachedPosts[index])) {
+      savePosts(posts);
     } else {
-      console.error("🔴 data/posts.json도 없습니다. 빌드를 중단합니다.");
-      process.exit(1);
+      generateRss(posts);
     }
+    console.log(`⚠️ 기존 캐시 사용 (${posts.length}개 포스트)`);
+    return;
+  } finally {
+    clearTimeout(timeout);
   }
+
+  const posts = processCsv(csvText);
+  if (posts.length === 0) throw new Error("CSV에 게시글이 없습니다.");
+  savePosts(posts);
 }
 
-main().catch((err) => {
-  console.error("❌ 예상치 못한 오류:", err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error("❌ 콘텐츠 준비 실패:", err.message);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { processCsv, savePosts };

@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchPosts, getPostBySlug, getPostsByCategory } from "../../lib/fetchPosts";
+import { getArticleSections } from "../../lib/articleSections";
+import { commonThumbnail } from "../../lib/siteImages";
 import RelatedPosts from "../../components/RelatedPosts";
+import TutoringBanner from "../../components/TutoringBanner";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -40,9 +43,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: post.summary,
       images: [
         {
-          url: "/og-image.png",
-          width: 1200,
-          height: 630,
+          url: commonThumbnail.src,
+          width: commonThumbnail.width,
+          height: commonThumbnail.height,
           alt: post.title,
         },
       ],
@@ -51,7 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: "summary_large_image",
       title: post.title,
       description: post.summary,
-      images: ["/og-image.png"],
+      images: [commonThumbnail.src],
     },
   };
 }
@@ -64,20 +67,12 @@ export default async function PostPage({ params }: Props) {
     notFound();
   }
 
-  const categoryPosts = getPostsByCategory(post.category);
+  const categoryPosts = getPostsByCategory(post.category).map(({ slug, title, summary }) => ({
+    slug, title, summary,
+  }));
+  const [intro, firstSection, secondSection] = getArticleSections(post.html);
 
-  // 동적 메타데이터는 head에서 직접 처리
   return (
-    <>
-      <header className="site-header">
-        <div className="site-header__inner">
-          <Link href="/" className="site-header__logo">
-            🌿 아이마음연구소
-          </Link>
-          <span className="site-header__subtitle">자녀 심리 · 육아 전문 정보</span>
-        </div>
-      </header>
-
       <main className="article-wrapper">
         <div className="article-container">
           {/* 브레드크럼 */}
@@ -86,16 +81,7 @@ export default async function PostPage({ params }: Props) {
             <span className="breadcrumb__sep">›</span>
             <span>{post.category}</span>
             <span className="breadcrumb__sep">›</span>
-            <span
-              style={{
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                maxWidth: "200px",
-              }}
-            >
-              {post.title}
-            </span>
+            <span aria-current="page" className="breadcrumb__current">{post.title}</span>
           </nav>
 
           {/* 아티클 헤더 */}
@@ -108,29 +94,17 @@ export default async function PostPage({ params }: Props) {
           </header>
 
           {/* 본문 */}
-          <article
-            className="article-body"
-            dangerouslySetInnerHTML={{ __html: post.html }}
-          />
-
-          {/* 공정위 필수 문구 */}
-          <p className="affiliate-disclosure">
-            이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
-          </p>
+          <article className="article-body">
+            {intro && <div dangerouslySetInnerHTML={{ __html: intro }} />}
+            <TutoringBanner placement="top" />
+            {firstSection && <div dangerouslySetInnerHTML={{ __html: firstSection }} />}
+            <TutoringBanner placement="middle" />
+            {secondSection && <div dangerouslySetInnerHTML={{ __html: secondSection }} />}
+          </article>
+          <TutoringBanner placement="bottom" />
         </div>
 
-        {/* 같은 카테고리의 다른 글 */}
-        <div style={{ maxWidth: "700px", margin: "0 auto" }}>
-          <RelatedPosts posts={categoryPosts} currentSlug={post.slug} />
-        </div>
+        <RelatedPosts posts={categoryPosts} currentSlug={post.slug} />
       </main>
-
-      <footer className="site-footer">
-        <p>© 2025 아이마음연구소. All rights reserved.</p>
-        <p style={{ marginTop: "0.25rem" }}>
-          자녀 심리 · 사춘기 육아 · 감정코칭 전문 블로그
-        </p>
-      </footer>
-    </>
   );
 }
