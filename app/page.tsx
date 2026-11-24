@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { fetchPosts } from "../lib/fetchPosts";
+import PostGrid from "../components/PostGrid";
+import { categories, categoryPageHref } from "../lib/categories";
+import { getPostsByCategory } from "../lib/fetchPosts";
 import { commonThumbnail } from "../lib/siteImages";
 
-export default function HomePage() {
-  const posts = fetchPosts();
-  const categories = Array.from(new Set(posts.map((post) => post.category)));
+const homePostsPerCategory = 10;
 
+export default function HomePage() {
   return (
     <main className="home-page">
       <section className="home-hero">
@@ -25,47 +26,28 @@ export default function HomePage() {
         />
       </section>
 
-      {categories.length > 0 && (
-        <nav className="category-nav" aria-label="게시글 카테고리">
-          {categories.map((category, index) => (
-            <a key={category} href={`#category-${index + 1}`}>{category}</a>
-          ))}
-        </nav>
-      )}
+      <nav className="category-nav" aria-label="게시글 카테고리">
+        {categories.map(({ name, slug }, index) => (
+          <a key={slug} href={`#category-${index + 1}`}>{name}</a>
+        ))}
+      </nav>
 
-      {categories.map((category, index) => {
-        const categoryPosts = posts.filter((post) => post.category === category);
+      {categories.map(({ name, slug }, index) => {
+        const posts = getPostsByCategory(name).slice(0, homePostsPerCategory);
         const sectionId = `category-${index + 1}`;
 
         return (
-          <section className="home-section" id={sectionId} key={category} aria-labelledby={`${sectionId}-title`}>
-            <h2 id={`${sectionId}-title`}>{category}</h2>
-            <div className="post-grid">
-              {categoryPosts.map((post, index) => (
-                <Link key={`${post.slug}-${index}`} href={`/${post.slug}/`} className="post-card" prefetch={false}>
-                  <div className="post-card__heading">
-                    <div>
-                      <span className="post-card__category">{post.category}</span>
-                      <h3>{post.title}</h3>
-                    </div>
-                    <Image
-                      className="post-card__thumbnail"
-                      src={commonThumbnail.src}
-                      width={commonThumbnail.width}
-                      height={commonThumbnail.height}
-                      alt=""
-                    />
-                  </div>
-                  <p className="post-card__summary">{post.summary}</p>
-                  <span className="post-card__more">자세히 읽기</span>
-                </Link>
-              ))}
+          <section className="home-section" id={sectionId} key={slug} aria-labelledby={`${sectionId}-title`}>
+            <h2 id={`${sectionId}-title`}>{name}</h2>
+            {posts.length > 0 ? <PostGrid posts={posts} /> : <p className="no-posts">아직 게시글이 없습니다.</p>}
+            <div className="home-section__footer">
+              <Link className="category-more" href={categoryPageHref(slug)} aria-label={`${name} 더 많은 글 보기`}>
+                더 많은 글 보기 →
+              </Link>
             </div>
           </section>
         );
       })}
-
-      {posts.length === 0 && <p className="no-posts">게시글을 불러오는 중입니다...</p>}
     </main>
   );
 }

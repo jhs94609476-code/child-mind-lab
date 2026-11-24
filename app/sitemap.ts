@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { categories, categoryPageCount, categoryPageHref } from "../lib/categories";
 import { fetchPosts } from "../lib/fetchPosts";
 
 export const dynamic = "force-static";
@@ -14,6 +15,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
 
+  const categoryEntries: MetadataRoute.Sitemap = categories.flatMap(({ name, slug }) => {
+    const postCount = posts.filter((post) => post.category === name).length;
+    return Array.from({ length: categoryPageCount(postCount) }, (_, index) => ({
+      url: `${baseUrl}${categoryPageHref(slug, index + 1)}`,
+    }));
+  });
+
   return [
     {
       url: `${baseUrl}/`,
@@ -22,5 +30,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
     ...postEntries,
+    ...categoryEntries,
   ];
 }
