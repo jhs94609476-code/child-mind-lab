@@ -6,8 +6,10 @@ const fs = require("fs");
 const path = require("path");
 const { normalizePosts } = require("./normalize-banner-markers");
 
+const SHEET_GID = "1700597570";
 const CSV_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vStAETGqwhy2ux_FQAzPeS_bPUu_pIk_F7n79vO7LKCgAZ1KYHnqJ37WX5c2Higqtzx8gG6HBq7zouS/pub?gid=1700597570&single=true&output=csv";
+  `https://docs.google.com/spreadsheets/d/1aGeIcnU6FGBEIjEcWwr5CxxWe8WStvEYzoxxkFhvYgg/export?format=csv&gid=${SHEET_GID}`;
+const CSV_COLUMNS = ["slug", "Category", "Content_Markdown"];
 
 function parseCsvRobust(csvText) {
   const text = csvText.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
@@ -52,7 +54,10 @@ function parseCsvRobust(csvText) {
     return fields;
   }
 
-  const headers = readRow();
+  const headers = readRow().map((header) => header.trim());
+  if (!CSV_COLUMNS.every((column) => headers.includes(column))) {
+    throw new Error("CSV에 slug, Category, Content_Markdown 열이 필요합니다.");
+  }
   const rows = [];
   while (i < len) {
     while (i < len && text[i] === "\n") i++;
@@ -61,7 +66,7 @@ function parseCsvRobust(csvText) {
     if (values.length === 0 || (values.length === 1 && !values[0])) continue;
     const row = {};
     headers.forEach((h, idx) => {
-      row[h.trim()] = values[idx] || "";
+      row[h] = values[idx] || "";
     });
     rows.push(row);
   }
@@ -167,16 +172,18 @@ async function main() {
   try {
     const res = await fetch(CSV_URL, {
       signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
-        Accept: "text/csv,text/plain,*/*",
-      },
+      headers: { Accept: "text/csv" },
       redirect: "follow",
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    const contentType = res.headers.get("content-type") || "";
+    if (!/^text\/csv(?:\s*;|$)/i.test(contentType)) {
+      throw new Error(`HTTP ${res.status}: CSV 대신 ${contentType || "형식 미지정 응답"}을 받았습니다.`);
+    }
     csvText = await res.text();
+    console.log(`✅ Google Sheets CSV 응답 확인 (gid=${SHEET_GID}, HTTP ${res.status})`);
   } catch (err) {
-    console.error("❌ CSV 가져오기 실패:", err.message);
+    console.error(`❌ CSV 가져오기 실패 (gid=${SHEET_GID}):`, err.message);
     const fallbackPath = path.join(__dirname, "..", "data", "posts.json");
     if (!fs.existsSync(fallbackPath)) throw new Error("data/posts.json도 없습니다.");
 
